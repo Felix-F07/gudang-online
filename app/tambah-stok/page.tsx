@@ -85,11 +85,8 @@ export default function TambahStokPage() {
       <div className="row row-cols-2 row-cols-md-4 g-3">
         {products.map((product) => (
           <div key={product.products_id} className="col">
-            <button 
-              className="btn btn-outline-primary w-100 h-100 p-3" 
-              onClick={() => handleCardClick(product)}
-            >
-              {product.products_name}
+            <button className="btn btn-outline-dark w-100 h-100 p-3" onClick={() => handleCardClick(product)}>
+                {product.products_name}
             </button>
           </div>
         ))}
