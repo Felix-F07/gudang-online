@@ -136,17 +136,16 @@ export default function LihatStokPage() {
                             history.map((entry, index) => (
                               <tr key={index}>
                                 <td>
-  {new Date(entry.transactions_created_at).toLocaleString('id-ID', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false, // Gunakan format 24 jam
-    timeZone: 'Asia/Jakarta' // Pastikan konsisten dengan WIB
-  })}
-</td>
+                                  {new Date(entry.transactions_created_at).toLocaleString('id-ID', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false,
+                                    timeZone: 'Asia/Jakarta',
+                                  })}
+                                </td>
                                 <td className="text-end">+{entry.transactions_quantity_change}</td>
                               </tr>
                             ))
