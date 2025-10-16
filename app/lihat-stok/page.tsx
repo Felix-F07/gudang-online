@@ -34,10 +34,16 @@ export default function LihatStokPage() {
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    // Tipe data sudah didefinisikan di luar komponen, tidak perlu lagi di sini.
+
     const fetchStocks = async () => {
       const { data, error } = await supabase
         .from('inventory')
-        .select(`inventory_quantity, products ( products_id, products_name )`)
+        .select(`
+          inventory_quantity,
+          products!inner ( products_id, products_name )
+        `)
+        .neq('products.products_type', 'Milk Tea Fruity')
         .order('products_id', { foreignTable: 'products' })
         .returns<InventoryWithProduct[]>();
 
@@ -46,16 +52,10 @@ export default function LihatStokPage() {
         return;
       }
       
-      // ================= LANGKAH DEBUGGING =================
-      // Baris ini akan mencetak struktur data asli ke console browser
-      console.log('Data asli dari Supabase:', JSON.stringify(data, null, 2));
-      // ======================================================
-
-      if (!data) return; // Tambahkan pengecekan jika data null
-
-      // Filter dan map dengan cara yang 100% aman
-      const formattedData: ProductStock[] = data
-        .filter(item => item && item.products) // Pastikan item dan item.products ada
+      const formattedData = data
+        // Langkah 1: Pastikan `products` ada
+        .filter((item): item is Required<typeof item> => !!item.products)
+        // Langkah 2: Gunakan '!' untuk meyakinkan TypeScript
         .map(item => ({
           inventory_quantity: item.inventory_quantity,
           products_id: item.products!.products_id,
