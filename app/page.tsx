@@ -12,7 +12,7 @@ export default function HomePage() {
         <Link href="/tambah-stok" className="btn btn-primary">
           Tambah Stok Produk
         </Link>
-        <Link href="/tambah-produk" className="btn btn-primary">
+        <Link href="/tambah/hapus-produk" className="btn btn-primary">
           Tambah Produk Baru
         </Link>
         <button className="btn btn-secondary" disabled>Buat Pembukuan (Segera Hadir)</button>
