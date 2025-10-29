@@ -10,7 +10,7 @@ export default function HomePage() {
           Lihat Stok Produk
         </Link>
         <Link href="/tambah-stok" className="btn btn-primary">
-          Tambah / stok Stok Produk
+          Tambah / hapus Stok Produk
         </Link>
         <Link href="/tambah-produk" className="btn btn-primary">
           Tambah / hapus Produk
