@@ -10,10 +10,10 @@ export default function HomePage() {
           Lihat Stok Produk
         </Link>
         <Link href="/tambah-stok" className="btn btn-primary">
-          Tambah Stok Produk
+          Tambah / stok Stok Produk
         </Link>
         <Link href="/tambah-produk" className="btn btn-primary">
-          Tambah Produk Baru
+          Tambah / hapus Produk
         </Link>
         <button className="btn btn-secondary" disabled>Buat Pembukuan (Segera Hadir)</button>
       </div>
