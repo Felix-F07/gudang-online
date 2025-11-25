@@ -15,7 +15,7 @@ export default function HomePage() {
         <Link href="/tambah-produk" className="btn btn-primary">
           Tambah / hapus Produk
         </Link>
-        <button className="btn btn-secondary" disabled>Buat Pembukuan (Segera Hadir)</button>
+        <button className="btn btn-secondary" disabled>Buat Pembukuan</button>
       </div>
     </main>
   );
