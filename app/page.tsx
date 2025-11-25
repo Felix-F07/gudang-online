@@ -13,7 +13,7 @@ export default function HomePage() {
           Tambah / hapus Stok Produk
         </Link>
         <Link href="/tambah-produk" className="btn btn-primary">
-          Tambah / hapus Produk
+          Tambah Produk
         </Link>
         <button className="btn btn-secondary" disabled>Buat Pembukuan</button>
       </div>
