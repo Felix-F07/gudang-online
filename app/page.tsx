@@ -15,7 +15,9 @@ export default function HomePage() {
         <Link href="/tambah-produk" className="btn btn-primary">
           Tambah Produk
         </Link>
-        <button className="btn btn-secondary" disabled>Buat Pembukuan</button>
+        <Link href="/pembukuan" className="btn btn-secondary w-100 py-3">
+          Buat Pembukuan
+        </Link>
       </div>
     </main>
   );

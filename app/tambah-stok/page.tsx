@@ -7,6 +7,10 @@ import { supabase } from '../../lib/supabaseClient';
 interface Product {
   products_id: number;
   products_name: string;
+  // Struktur ini kita pertahankan agar kompatibel dengan logika UI di bawah
+  inventory: {
+    inventory_quantity: number;
+  }[];
 }
 
 export default function TambahStokPage() {
@@ -17,30 +21,47 @@ export default function TambahStokPage() {
   const [quantity, setQuantity] = useState('');
   const [updateDate, setUpdateDate] = useState('');
   
-  // State baru untuk menentukan aksi: 'add' (tambah) atau 'remove' (kurang)
   const [actionType, setActionType] = useState<'add' | 'remove' | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
+      // PERUBAHAN UTAMA: Kita ambil dari tabel 'inventory', bukan 'products'
+      // Ini menjamin data stok pasti sama dengan halaman Lihat Stok
       const { data, error } = await supabase
-        .from('products')
-        .select('products_id, products_name')
-        // Filter untuk mengecualikan tipe 'Milk Tea Fruity' (sesuai request sebelumnya)
-        .neq('products_type', 'Milk Tea Fruity')
-        .order('products_name');
+        .from('inventory')
+        .select(`
+          inventory_quantity,
+          products!inner ( products_id, products_name, products_type )
+        `)
+        .neq('products.products_type', 'Milk Tea Fruity')
+        .order('products_id', { foreignTable: 'products' }); // Sorting mungkin perlu penyesuaian di JS jika ini tidak jalan
         
-      if (!error) setProducts(data);
-      else console.error('Error fetching products:', error);
+      if (!error && data) {
+        // Kita format ulang datanya agar sesuai dengan bentuk 'Product' yang UI kita butuhkan
+        const formattedData: Product[] = data.map((item: any) => ({
+          products_id: item.products.products_id,
+          products_name: item.products.products_name,
+          // Kita buat seolah-olah ini array inventory, agar logika di bawah tidak perlu diubah
+          inventory: [{ inventory_quantity: item.inventory_quantity }]
+        }));
+
+        // Opsional: Sort manual berdasarkan nama agar rapi (karena order foreignTable kadang tricky)
+        formattedData.sort((a, b) => a.products_name.localeCompare(b.products_name));
+        
+        setProducts(formattedData);
+      } else {
+        console.error('Error fetching products:', error);
+      }
       setLoading(false);
     };
+
     fetchProducts();
   }, []);
 
   const handleCardClick = (product: Product) => {
     setSelectedProduct(product);
-    setActionType(null); // Reset aksi saat membuka modal baru
+    setActionType(null); 
     
-    // Set waktu default
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     const formattedDateTime = now.toISOString().slice(0, 16);
@@ -62,25 +83,35 @@ export default function TambahStokPage() {
     }
 
     const isoDate = new Date(updateDate).toISOString();
-    
-    // LOGIKA BARU: Jika aksi 'remove', jadikan jumlah negatif
     let finalQuantity = parseInt(quantity);
+    
     if (actionType === 'remove') {
-      finalQuantity = -finalQuantity;
+      const currentStock = selectedProduct.inventory?.[0]?.inventory_quantity || 0;
+
+      if (finalQuantity > currentStock) {
+        alert(`Jumlah stok ${selectedProduct.products_name} adalah ${currentStock}`);
+        finalQuantity = -currentStock;
+      } else {
+        finalQuantity = -finalQuantity;
+      }
+    }
+
+    if (actionType === 'remove' && finalQuantity === 0) {
+      alert(`Stok ${selectedProduct.products_name} sudah habis (0). Tidak ada yang bisa dikurangi.`);
+      return;
     }
 
     const { error } = await supabase.rpc('tambah_stok', {
       product_id_to_update: selectedProduct.products_id,
-      quantity_to_add: finalQuantity, // Kirim angka positif atau negatif
+      quantity_to_add: finalQuantity, 
       update_date: isoDate,
     });
 
     if (error) {
       alert('Gagal update stok: ' + error.message);
     } else {
-      const actionText = actionType === 'add' ? 'ditambah' : 'dikurangi';
-      alert(`Stok ${selectedProduct.products_name} berhasil ${actionText}!`);
-      closeModal();
+      alert(`Berhasil! Data stok ${selectedProduct.products_name} telah diperbarui.`);
+      window.location.reload(); 
     }
   };
 
@@ -94,10 +125,14 @@ export default function TambahStokPage() {
         {products.map((product) => (
           <div key={product.products_id} className="col">
             <button 
-              className="btn btn-outline-dark w-100 h-100 p-3" 
+              className="btn btn-outline-dark w-100 h-100 p-3 d-flex flex-column justify-content-center align-items-center" 
               onClick={() => handleCardClick(product)}
             >
-              {product.products_name}
+              <div className="fw-bold">{product.products_name}</div>
+              <small className="text-muted mt-2">
+                {/* Sekarang ini pasti menampilkan angka yang benar (misal: 30) */}
+                Stok: {product.inventory?.[0]?.inventory_quantity || 0}
+              </small>
             </button>
           </div>
         ))}
@@ -107,7 +142,6 @@ export default function TambahStokPage() {
         <Link href="/" className="btn btn-link">&larr; Kembali ke Halaman Utama</Link>
       </div>
 
-      {/* Modal */}
       {selectedProduct && (
         <>
           <div className="modal-backdrop fade show"></div>
@@ -116,7 +150,6 @@ export default function TambahStokPage() {
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">
-                    {/* Judul Dinamis */}
                     {!actionType 
                       ? `Pilih Aksi: ${selectedProduct.products_name}` 
                       : actionType === 'add' 
@@ -128,7 +161,6 @@ export default function TambahStokPage() {
                 </div>
 
                 <div className="modal-body">
-                  {/* TAMPILAN 1: PILIH AKSI */}
                   {!actionType ? (
                     <div className="d-grid gap-3">
                       <button 
@@ -143,9 +175,11 @@ export default function TambahStokPage() {
                       >
                         - Kurangi Stok (Barang Keluar/Rusak)
                       </button>
+                      <p className="text-center text-muted mt-2">
+                        Sisa Stok Saat Ini: <strong>{selectedProduct.inventory?.[0]?.inventory_quantity || 0}</strong>
+                      </p>
                     </div>
                   ) : (
-                    /* TAMPILAN 2: FORM INPUT */
                     <form onSubmit={handleStockUpdate}>
                       <div className="mb-3">
                         <label htmlFor="quantity" className="form-label">
@@ -176,7 +210,6 @@ export default function TambahStokPage() {
                       </div>
                       
                       <div className="d-flex justify-content-end gap-2">
-                        {/* Tombol Kembali ke pilihan aksi */}
                         <button 
                           type="button" 
                           className="btn btn-secondary" 
