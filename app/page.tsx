@@ -7,7 +7,7 @@ export default function Home() {
       <div className="text-center mb-5">
         <h1 className="display-4 fw-bold text-primary">Gudang Minuman Online</h1>
         <p className="lead text-muted">
-          Sistem manajemen stok & pembukuan yang mudah dan cepat.
+          
         </p>
       </div>
 
