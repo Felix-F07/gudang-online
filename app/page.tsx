@@ -82,7 +82,7 @@ export default function Home() {
 
       {/* Footer Kecil */}
       <div className="text-center mt-5 pt-4 text-muted border-top">
-        <small>&copy; 2025 Gudang Online Teh Poci &bull; Dibuat dengan Next.js</small>
+        <small>&copy; 2025 Gudang Online Teh Poci</small>
       </div>
     </main>
   );
