@@ -3,98 +3,125 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-
-// Fungsi untuk memformat angka dengan titik ribuan
-const formatPrice = (value: string): string => {
-  if (!value) return '';
-  // Hapus semua karakter selain angka
-  const numberValue = parseInt(value.replace(/[^0-9]/g, ''), 10);
-  // Jika bukan angka, kembalikan string kosong
-  if (isNaN(numberValue)) return '';
-  // Format dengan titik
-  return numberValue.toLocaleString('id-ID');
-};
-
-// Fungsi untuk menghapus format titik
-const unformatPrice = (value: string): string => {
-  return value.replace(/\./g, '');
-};
+import { useRouter } from 'next/navigation';
 
 export default function TambahProdukPage() {
-  const [productName, setProductName] = useState<string>('');
-  // State sekarang menyimpan harga tanpa format (contoh: "10000")
-  const [productPrice, setProductPrice] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [type, setType] = useState('Creamy'); // Default
+  const [loading, setLoading] = useState(false);
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = unformatPrice(e.target.value);
-    // Hanya perbarui state jika inputnya adalah angka
-    if (!isNaN(Number(rawValue))) {
-      setProductPrice(rawValue);
-    }
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsLoading(true);
-
-    if (!productName || !productPrice) {
-      alert('Nama produk dan harga tidak boleh kosong!');
-      setIsLoading(false);
+    if (!name || !price) {
+      alert("Nama dan Harga harus diisi!");
+      setLoading(false);
       return;
     }
 
-    const { error } = await supabase
+    // 1. Masukkan ke tabel 'products'
+    const { data: productData, error: productError } = await supabase
       .from('products')
-      .insert([
-        { products_name: productName, products_price: Number(productPrice) } // Kirim harga murni
-      ]);
+      .insert([{ 
+        products_name: name, 
+        products_price: parseInt(price),
+        products_type: type
+      }])
+      .select();
 
-    if (error) {
-      alert('Penambahan gagal: ' + error.message);
-    } else {
-      alert('Penambahan berhasil!');
-      setProductName('');
-      setProductPrice('');
+    if (productError) {
+      alert('Gagal menambah produk: ' + productError.message);
+      setLoading(false);
+      return;
     }
 
-    setIsLoading(false);
+    // 2. Otomatis buat data 'inventory' awal (0) untuk produk baru ini
+    if (productData && productData.length > 0) {
+      const newProductId = productData[0].products_id;
+      const { error: invError } = await supabase
+        .from('inventory')
+        .insert([{ 
+          products_id: newProductId, 
+          inventory_quantity: 0 
+        }]);
+        
+      if (invError) console.error("Gagal inisialisasi inventory:", invError);
+    }
+
+    setLoading(false);
+    alert('Produk baru berhasil ditambahkan!');
+    router.push('/'); // Kembali ke menu utama
   };
 
   return (
-    <main className="container">
-      <h1>Tambah Produk Baru</h1>
-      <form onSubmit={handleSubmit} className="form">
-        <div className="form-group">
-          <label htmlFor="productName">Nama Produk</label>
-          <input
-            id="productName"
-            type="text"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-            placeholder="Contoh: Kopi Susu"
-            disabled={isLoading}
-          />
+    <main className="container py-5">
+      {/* --- HEADER BARU --- */}
+      <div className="d-flex justify-content-end mb-4">
+        <Link href="/" className="btn btn-outline-secondary">
+          Menu Utama
+        </Link>
+      </div>
+
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+              <h2 className="text-center mb-4">Tambah Produk Baru</h2>
+              
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Nama Produk</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Contoh: Hazelnut Choco"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Harga (Rp)</label>
+                  <input 
+                    type="number" 
+                    className="form-control" 
+                    placeholder="Contoh: 10000"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label fw-bold">Kategori / Tipe</label>
+                  <select 
+                    className="form-select" 
+                    value={type} 
+                    onChange={(e) => setType(e.target.value)}
+                  >
+                    <option value="Original">Original</option>
+                    <option value="Creamy">Creamy</option>
+                    <option value="Fruity">Fruity</option>
+                    <option value="Special">Special</option>
+                  </select>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary w-100 py-2 fw-bold"
+                  disabled={loading}
+                >
+                  {loading ? 'Menyimpan...' : 'Simpan Produk'}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="productPrice">Harga Produk</label>
-          <input
-            id="productPrice"
-            type="text" // Diubah dari "number" ke "text"
-            inputMode="numeric" // Membantu menampilkan keyboard angka di mobile
-            value={formatPrice(productPrice)} // Tampilkan harga yang sudah diformat
-            onChange={handlePriceChange} // Gunakan fungsi handler baru
-            placeholder="Contoh: 8.000"
-            disabled={isLoading}
-          />
-        </div>
-        <button type="submit" className="button" disabled={isLoading}>
-          {isLoading ? 'Menyimpan...' : 'Simpan Produk'}
-        </button>
-      </form>
-      <Link href="/" className="back-button">
-        &larr; Kembali ke Halaman Utama
-      </Link>
+      </div>
     </main>
   );
 }

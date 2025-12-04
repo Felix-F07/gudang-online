@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 
-// Tipe data yang kita harapkan dari Supabase
+// ... (Definisi Tipe Data - Sama seperti sebelumnya) ...
 type InventoryWithProduct = {
   inventory_quantity: number;
   products: {
@@ -13,14 +13,12 @@ type InventoryWithProduct = {
   } | null;
 };
 
-// Tipe data yang sudah bersih untuk state
 interface ProductStock {
   products_id: number;
   products_name: string;
   inventory_quantity: number;
 }
 
-// Tipe data untuk riwayat transaksi
 interface TransactionHistory {
   transactions_created_at: string;
   transactions_quantity_change: number;
@@ -34,8 +32,7 @@ export default function LihatStokPage() {
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    // Tipe data sudah didefinisikan di luar komponen, tidak perlu lagi di sini.
-
+    // ... (Logika fetchStocks - SAMA SEPERTI SEBELUMNYA, TIDAK DIUBAH) ...
     const fetchStocks = async () => {
       const { data, error } = await supabase
         .from('inventory')
@@ -53,9 +50,7 @@ export default function LihatStokPage() {
       }
       
       const formattedData = data
-        // Langkah 1: Pastikan `products` ada
         .filter((item): item is Required<typeof item> => !!item.products)
-        // Langkah 2: Gunakan '!' untuk meyakinkan TypeScript
         .map(item => ({
           inventory_quantity: item.inventory_quantity,
           products_id: item.products!.products_id,
@@ -79,6 +74,7 @@ export default function LihatStokPage() {
   const handleViewHistory = async (product: ProductStock) => {
     setSelectedProduct(product);
     setHistoryLoading(true);
+    // ... (Logika history - SAMA SEPERTI SEBELUMNYA) ...
     const { data } = await supabase
       .from('transactions')
       .select('transactions_created_at, transactions_quantity_change')
@@ -96,10 +92,17 @@ export default function LihatStokPage() {
 
   if (loading) return <main className="container py-5 text-center"><p>Memuat stok...</p></main>;
 
-  // ... (Sisa kode JSX Anda dari return() sampai akhir tidak perlu diubah, biarkan seperti yang sudah ada)
   return (
     <main className="container py-5">
+      {/* --- HEADER BARU --- */}
+      <div className="d-flex justify-content-end mb-4">
+        <Link href="/" className="btn btn-outline-secondary">
+          Menu Utama
+        </Link>
+      </div>
+
       <h1 className="text-center mb-4">Stok Produk Saat Ini</h1>
+
       <div className="row row-cols-2 row-cols-md-4 g-3">
         {stocks.map((stock) => (
           <div key={stock.products_id} className="col">
@@ -113,9 +116,10 @@ export default function LihatStokPage() {
           </div>
         ))}
       </div>
-      <div className="text-center mt-4">
-        <Link href="/" className="btn btn-link">&larr; Kembali ke Halaman Utama</Link>
-      </div>
+
+      {/* Tombol kembali di bawah DIHAPUS karena sudah pindah ke atas */}
+
+      {/* --- MODAL (TIDAK BERUBAH) --- */}
       {selectedProduct && (
         <>
           <div className="modal-backdrop fade show"></div>
@@ -123,7 +127,7 @@ export default function LihatStokPage() {
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Riwayat Tambah Stok: {selectedProduct.products_name}</h5>
+                  <h5 className="modal-title">Riwayat Stok: {selectedProduct.products_name}</h5>
                   <button type="button" className="btn-close" onClick={closeModal}></button>
                 </div>
                 <div className="modal-body">
@@ -137,16 +141,12 @@ export default function LihatStokPage() {
                               <tr key={index}>
                                 <td>
                                   {new Date(entry.transactions_created_at).toLocaleString('id-ID', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false,
-                                    timeZone: 'Asia/Jakarta',
+                                    year: 'numeric', month: '2-digit', day: '2-digit',
+                                    hour: '2-digit', minute: '2-digit',
+                                    hour12: false, timeZone: 'Asia/Jakarta',
                                   })}
                                 </td>
-                                <td className="text-end">+{entry.transactions_quantity_change}</td>
+                                <td className="text-end">{entry.transactions_quantity_change > 0 ? '+' : ''}{entry.transactions_quantity_change}</td>
                               </tr>
                             ))
                           ) : (<tr><td colSpan={2} className="text-center">Belum ada riwayat.</td></tr>)}

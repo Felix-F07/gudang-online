@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 
+// ... (Interface Product - SAMA) ...
 interface Product {
   products_id: number;
   products_name: string;
-  // Struktur ini kita pertahankan agar kompatibel dengan logika UI di bawah
   inventory: {
     inventory_quantity: number;
   }[];
@@ -20,13 +20,11 @@ export default function TambahStokPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('');
   const [updateDate, setUpdateDate] = useState('');
-  
   const [actionType, setActionType] = useState<'add' | 'remove' | null>(null);
 
   useEffect(() => {
+    // ... (Fetch logic - SAMA SEPERTI SEBELUMNYA) ...
     const fetchProducts = async () => {
-      // PERUBAHAN UTAMA: Kita ambil dari tabel 'inventory', bukan 'products'
-      // Ini menjamin data stok pasti sama dengan halaman Lihat Stok
       const { data, error } = await supabase
         .from('inventory')
         .select(`
@@ -34,38 +32,31 @@ export default function TambahStokPage() {
           products!inner ( products_id, products_name, products_type )
         `)
         .neq('products.products_type', 'Milk Tea Fruity')
-        .order('products_id', { foreignTable: 'products' }); // Sorting mungkin perlu penyesuaian di JS jika ini tidak jalan
+        .order('products_id', { foreignTable: 'products' });
         
       if (!error && data) {
-        // Kita format ulang datanya agar sesuai dengan bentuk 'Product' yang UI kita butuhkan
         const formattedData: Product[] = data.map((item: any) => ({
           products_id: item.products.products_id,
           products_name: item.products.products_name,
-          // Kita buat seolah-olah ini array inventory, agar logika di bawah tidak perlu diubah
           inventory: [{ inventory_quantity: item.inventory_quantity }]
         }));
-
-        // Opsional: Sort manual berdasarkan nama agar rapi (karena order foreignTable kadang tricky)
         formattedData.sort((a, b) => a.products_name.localeCompare(b.products_name));
-        
         setProducts(formattedData);
       } else {
         console.error('Error fetching products:', error);
       }
       setLoading(false);
     };
-
     fetchProducts();
   }, []);
 
+  // ... (Event handlers - SAMA SEPERTI SEBELUMNYA) ...
   const handleCardClick = (product: Product) => {
     setSelectedProduct(product);
     setActionType(null); 
-    
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     const formattedDateTime = now.toISOString().slice(0, 16);
-    
     setUpdateDate(formattedDateTime);
     setQuantity('');
   };
@@ -76,6 +67,7 @@ export default function TambahStokPage() {
   };
 
   const handleStockUpdate = async (event: React.FormEvent) => {
+    // ... (Logika update stok - SAMA SEPERTI YANG SUDAH KITA PERBAIKI) ...
     event.preventDefault();
     if (!selectedProduct || !quantity || parseInt(quantity) <= 0) {
       alert('Jumlah harus diisi dan lebih dari 0.');
@@ -87,7 +79,6 @@ export default function TambahStokPage() {
     
     if (actionType === 'remove') {
       const currentStock = selectedProduct.inventory?.[0]?.inventory_quantity || 0;
-
       if (finalQuantity > currentStock) {
         alert(`Jumlah stok ${selectedProduct.products_name} adalah ${currentStock}`);
         finalQuantity = -currentStock;
@@ -119,6 +110,13 @@ export default function TambahStokPage() {
 
   return (
     <main className="container py-5">
+      {/* --- HEADER BARU --- */}
+      <div className="d-flex justify-content-end mb-4">
+        <Link href="/" className="btn btn-outline-secondary">
+          Menu Utama
+        </Link>
+      </div>
+
       <h1 className="text-center mb-4">Kelola Stok Produk</h1>
       
       <div className="row row-cols-2 row-cols-md-4 g-3">
@@ -130,7 +128,6 @@ export default function TambahStokPage() {
             >
               <div className="fw-bold">{product.products_name}</div>
               <small className="text-muted mt-2">
-                {/* Sekarang ini pasti menampilkan angka yang benar (misal: 30) */}
                 Stok: {product.inventory?.[0]?.inventory_quantity || 0}
               </small>
             </button>
@@ -138,15 +135,15 @@ export default function TambahStokPage() {
         ))}
       </div>
 
-      <div className="text-center mt-4">
-        <Link href="/" className="btn btn-link">&larr; Kembali ke Halaman Utama</Link>
-      </div>
+      {/* Tombol kembali di bawah DIHAPUS */}
 
+      {/* --- MODAL (TIDAK BERUBAH) --- */}
       {selectedProduct && (
         <>
           <div className="modal-backdrop fade show"></div>
           <div className="modal fade show" style={{ display: 'block' }} tabIndex={-1}>
-            <div className="modal-dialog modal-dialog-centered">
+             {/* Isi modal sama persis dengan kode sebelumnya */}
+             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">
@@ -163,16 +160,10 @@ export default function TambahStokPage() {
                 <div className="modal-body">
                   {!actionType ? (
                     <div className="d-grid gap-3">
-                      <button 
-                        className="btn btn-success btn-lg" 
-                        onClick={() => setActionType('add')}
-                      >
+                      <button className="btn btn-success btn-lg" onClick={() => setActionType('add')}>
                         + Tambah Stok (Barang Masuk)
                       </button>
-                      <button 
-                        className="btn btn-danger btn-lg" 
-                        onClick={() => setActionType('remove')}
-                      >
+                      <button className="btn btn-danger btn-lg" onClick={() => setActionType('remove')}>
                         - Kurangi Stok (Barang Keluar/Rusak)
                       </button>
                       <p className="text-center text-muted mt-2">
@@ -182,46 +173,18 @@ export default function TambahStokPage() {
                   ) : (
                     <form onSubmit={handleStockUpdate}>
                       <div className="mb-3">
-                        <label htmlFor="quantity" className="form-label">
+                        <label className="form-label">
                           {actionType === 'add' ? 'Jumlah Penambahan' : 'Jumlah Pengurangan'}
                         </label>
-                        <input 
-                          id="quantity" 
-                          type="number" 
-                          className="form-control" 
-                          value={quantity} 
-                          onChange={(e) => setQuantity(e.target.value)} 
-                          placeholder="Contoh: 50" 
-                          autoFocus 
-                          required 
-                          min="1"
-                        />
+                        <input id="quantity" type="number" className="form-control" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Contoh: 50" autoFocus required min="1"/>
                       </div>
                       <div className="mb-3">
-                        <label htmlFor="updateDate" className="form-label">Tanggal</label>
-                        <input 
-                          id="updateDate" 
-                          type="datetime-local" 
-                          className="form-control" 
-                          value={updateDate} 
-                          onChange={(e) => setUpdateDate(e.target.value)} 
-                          required 
-                        />
+                        <label className="form-label">Tanggal</label>
+                        <input id="updateDate" type="datetime-local" className="form-control" value={updateDate} onChange={(e) => setUpdateDate(e.target.value)} required />
                       </div>
-                      
                       <div className="d-flex justify-content-end gap-2">
-                        <button 
-                          type="button" 
-                          className="btn btn-secondary" 
-                          onClick={() => setActionType(null)}
-                        >
-                          Kembali
-                        </button>
-                        
-                        <button 
-                          type="submit" 
-                          className={`btn ${actionType === 'add' ? 'btn-success' : 'btn-danger'}`}
-                        >
+                        <button type="button" className="btn btn-secondary" onClick={() => setActionType(null)}>Kembali</button>
+                        <button type="submit" className={`btn ${actionType === 'add' ? 'btn-success' : 'btn-danger'}`}>
                           {actionType === 'add' ? 'Simpan Penambahan' : 'Simpan Pengurangan'}
                         </button>
                       </div>
